@@ -7,6 +7,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Checking out source code"
+                echo "Running CI pipeline for Vyomanant Academy"
             }
         }
 
