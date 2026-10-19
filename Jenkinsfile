@@ -3,9 +3,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "your-dockerhub-username/jenkins-docker-demo"
+        IMAGE_NAME = "kevinchris7/jenkins-docker-demo"
         IMAGE_TAG  = "${BUILD_NUMBER}"
-        EC2_HOST   = "your-ec2-public-ip"
+        EC2_HOST   = "13.203.67.221"
     }
 
     stages {
@@ -24,7 +24,7 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-dev', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
 
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
