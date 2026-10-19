@@ -41,7 +41,6 @@ pipeline {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
                         docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker run -d -p 80:80 --name app-container ${IMAGE_NAME}:${IMAGE_TAG}
                     '
                     '''
                 }
