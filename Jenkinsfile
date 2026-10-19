@@ -1,68 +1,55 @@
 pipeline {
+
     agent any
 
     environment {
-        IMAGE_NAME = "kevinchris7/jenkins-docker-demo"
+        IMAGE_NAME = "your-dockerhub-username/jenkins-docker-demo"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        EC2_HOST   = "your-ec2-public-ip"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                script {
-                    def scmVars = checkout scm
-                    env.GIT_COMMIT_SHORT = scmVars.GIT_COMMIT.take(7)
-                    env.BUILD_TAG_VERSION = env.BUILD_NUMBER
-                    env.LATEST_TAG = "latest"
-                }
-            }
-        }
-
-        stage('Show Tag Values') {
-            steps {
-                echo "Build Number Tag: ${BUILD_TAG_VERSION}"
-                echo "Git Commit Tag: ${GIT_COMMIT_SHORT}"
-                echo "Latest Tag: ${LATEST_TAG}"
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${BUILD_TAG_VERSION} .
-                    docker tag ${IMAGE_NAME}:${BUILD_TAG_VERSION} ${IMAGE_NAME}:${GIT_COMMIT_SHORT}
-                    docker tag ${IMAGE_NAME}:${BUILD_TAG_VERSION} ${IMAGE_NAME}:${LATEST_TAG}
-                """
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
 
-        stage('Docker Login') {
+        stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-dev', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                    '''
                 }
             }
         }
 
-        stage('Push Docker Tags') {
+        stage('Deploy to EC2') {
             steps {
-                sh """
-                    docker push ${IMAGE_NAME}:${BUILD_TAG_VERSION}
-                    docker push ${IMAGE_NAME}:${GIT_COMMIT_SHORT}
-                    docker push ${IMAGE_NAME}:${LATEST_TAG}
-                """
+                sshagent(['ec2-deploy-key']) {
+
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
+                        docker stop app-container || true &&
+                        docker rm app-container || true &&
+                        docker run -d -p 80:80 --name app-container ${IMAGE_NAME}:${IMAGE_TAG}
+                    '
+                    '''
+                }
             }
         }
 
-        stage('Verify Local Images') {
-            steps {
-                sh 'docker images | grep jenkins-docker-demo || true'
-            }
-        }
     }
 
-    post {
-        always {
-            sh 'docker logout || true'
-        }
-    }
 }
