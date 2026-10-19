@@ -1,6 +1,4 @@
 #!/bin/bash
 
-echo "Hello from GitHub CI Pipeline"
-echo "Running inside Jenkins"
-echo "CI Trigger Test"
+echo "Hello from Docker container built by Jenkins"
 date
