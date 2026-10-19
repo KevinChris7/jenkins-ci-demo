@@ -37,12 +37,14 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(['ec2-deploy-key']) {
-
-                    sh '''
+                    sh """
                     ssh -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
-                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG} &&
+                        docker stop app-container || true &&
+                        docker rm app-container || true &&
+                        docker run -d -p 80:80 --name app-container ${IMAGE_NAME}:${IMAGE_TAG}
                     '
-                    '''
+                    """
                 }
             }
         }
