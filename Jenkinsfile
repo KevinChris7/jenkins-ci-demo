@@ -4,31 +4,21 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                echo "Checking out source code"
-                echo "Running CI pipeline for Vyomanant Academy"
+                echo "Cloning repository"
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                echo "Building application"
-                sh 'echo Build completed'
+                sh 'docker build -t jenkins-docker-demo .'
             }
         }
 
-        stage('Test') {
+        stage('List Docker Images') {
             steps {
-                echo "Running tests"
-                sh 'echo Tests executed successfully'
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo "Deploying application"
-                sh 'echo Deployment successful'
+                sh 'docker images'
             }
         }
 
