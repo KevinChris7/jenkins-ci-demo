@@ -1,27 +1,48 @@
 pipeline {
-
     agent any
 
-    stages {
+    environment {
+        IMAGE_NAME = "your-dockerhub-username/jenkins-docker-demo"
+        IMAGE_TAG  = "latest"
+    }
 
-        stage('Clone Repository') {
+    stages {
+        stage('Checkout') {
             steps {
-                echo "Cloning repository"
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t jenkins-docker-demo .'
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
 
-        stage('List Docker Images') {
+        stage('Docker Login') {
             steps {
-                sh 'docker images'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                }
             }
         }
 
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
+            }
+        }
+
+        stage('Verify Image') {
+            steps {
+                sh 'docker images | grep jenkins-docker-demo || true'
+            }
+        }
     }
 
+    post {
+        always {
+            sh 'docker logout || true'
+        }
+    }
 }
