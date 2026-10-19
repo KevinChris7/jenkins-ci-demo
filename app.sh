@@ -1,4 +1,3 @@
 #!/bin/bash
-
-echo "Hello from Docker container built by Jenkins"
+echo "Hello from Docker image pushed by Jenkins"
 date
